@@ -1,0 +1,4 @@
+aiomas == 2.0.1
+nest-asyncio == 1.5.1
+request == 2.25.1
+bs4 == 0.0.1
