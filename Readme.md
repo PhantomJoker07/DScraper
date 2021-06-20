@@ -70,3 +70,90 @@ Nodes/logger.py -> Logger para registrar eventos y debuguear.
 Nodes/scrapper.py -> Nodo encargado de scrapear
 
 Nodes/utils.py -> Herramientas extras
+
+## Ejemplo
+
+Para visualizar el funcionamiento del sistema, modifique el archivo logger.py; tal que la salida del logger sea por la consola y no hacia un fichero.
+Comience ejecutando en un contenedor docker, los dados anteriormente.
+
+```
+docker container run -it --rm --network <nombre de la red> <nombre de la imagen> bash
+```
+```
+python3 bd_client.py &
+```
+```
+python3 sc_client.py &
+```
+```
+python3 ch_client.py &
+```
+```
+python3 fz_client.py
+```
+
+Realice el pedido de una URL en el formato correcto:
+
+```
+https://evea.uh.cu
+```
+
+En un segundo contenedor se inicia un segundo nodo, que se conectará al anterior
+
+```
+docker container run -it --rm --network <nombre de la red> <nombre de la imagen> bash
+```
+```
+python3 bd_client.py &
+```
+```
+python3 sc_client.py &
+```
+```
+python3 ch_client.py --address <IP del primer contenedor>:7700 &
+```
+```
+python3 fz_client.py
+```
+
+Se realiza un segundo request:
+
+```
+https://google.com
+```
+
+En dependencia del ID asignado a cada nodo, uno de los nodos anteriores será el encargado de realizar el scrapper. Después de encontrado el código HTML correspondiente se almacena en la BD del nodo que hizo el scrapper y es posible acceder a él aún y cuando no se tenga acceso a las páginas oficiales de las URL anteriores:
+
+```
+Quitar acceso a internet y preguntar en cada nodo por las mismas URL
+```
+
+Para comprobar la tolerancia a fallas, detenga el primer contenedor, tal que dicho nodo deje el anillo sin enviar un "disconnection request" que permita a los otros nodos actualizar el estado del sistema e intente nuevamente realizar las mismas peticiones de URL.
+
+Como la información de cada nodo n se almacena en pred(n), y el sistema es capaz de recuperar el correcto funcionamiento de la red chord, tras la salida repentina de n del sistema, la informaci[on que este almacenaba aun sigue siendo accesible, debido a la replicación de la misma en otro nodo.
+
+Conecte un tercer nodo al sistema:
+
+```
+docker container run -it --rm --network <nombre de la red> <nombre de la imagen> bash
+```
+```
+python3 bd_client.py &
+```
+```
+python3 sc_client.py &
+```
+```
+python3 ch_client.py --address <IP del contenedor restante>:7700 &
+```
+```
+python3 fz_client.py
+```
+
+En caso de que el nodo n deje voluntariamente el sistema con el comando:
+
+```
+exit
+```
+
+La información de succ(n) pasa para pred(n) sin que este último modifique la que ya tiene. Lo cual permite mantener la flexibilidad del sistema ante la conexión y desconexión de cualquier nodo. Como toda la información es accesible siempre que un nodo esté funcionando (y se asume que siempre habrá algún nodo funcionando), se tiene una disponibilidad del 100%. Como los nodos son independientes y la caída repentina de uno de ellos no afecta el funcionamiento de los otros, consituye un sistema confiable y seguro. En el caso de que el último nodo operativo falle, la información queda almacenada en su BD, por lo que un reinicio del mismo basta para poner nuevamente operativo al sistema.
